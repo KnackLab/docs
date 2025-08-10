@@ -1,0 +1,11 @@
+graph TB
+  GA["GitHub Actions<br/>(build & test)"]
+  ECR["Amazon ECR (me-central-1)<br/>image repositories"]
+  EC2["App EC2: knack-prod<br/>(t3.medium)"]
+  PORT["Portainer on EC2<br/>(deploy orchestration)"]
+  CNT["Containers (17)<br/>Nginx+Certbot, API Gateway, services, RabbitMQ"]
+
+  GA -->|docker build & push| ECR
+  ECR -->|pull latest tags| EC2
+  EC2 -->|trigger/update| PORT
+  PORT -->|redeploy/rollout| CNT

@@ -1,0 +1,88 @@
+graph LR
+  CF["Cloudflare DNS/Proxy<br/>Zone: knacklab.co"]
+  APPDNS["app.knacklab.co"] --> CF
+  APIDNS["api-gateway.knacklab.co"] --> CF
+
+  subgraph UAE["me-central-1 (UAE) — Production"]
+    direction LR
+    subgraph VPC_DEF["Default VPC 172.31.0.0/16 (public subnets, IGW)"]
+      direction LR
+      NGINX["EC2: knack-prod (t3.medium, 3.29.106.xxx)<br/>Container: Nginx + Certbot"]
+      GATEWAY["Container: API Gateway (Express Gateway)"]
+
+      subgraph SERVICES["Containers on knack-prod (17)"]
+        direction LR
+        AUTH["auth-ms (authentication-onboarding-ms)"]
+        ASSESS["assessment-ms (v1)"]
+        SURVEY["survey-ms"]
+        NOTIF["notification-ms"]
+        REPORT["report-ms"]
+        PROGRAM["program-ms"]
+        SLOG["session-logging-ms"]
+        SSCHED["session-scheduler-ms"]
+        FILEUP["file-upload-ms"]
+        EMAIL["email-ms (v2)"]
+        GOAL["goal-ms"]
+        FRONTEND["knack-frontend (React)"]
+        RABBIT["RabbitMQ"]
+        MCS["mongodb-change-streams"]
+      end
+
+      DBEC2["EC2: Mongo host (t3.medium, 3.28.24.xxx)<br/>Container: MongoDB 4.4.21<br/>EBS: 64 GiB data + 30 GiB root (gp3)"]
+      REDIS["Redis (container) on Mongo EC2<br/>Email cache (non‑persistent)"]
+
+      S3ASSETS["S3 bucket: knacklab-assets"]
+      S3PROGS["S3 bucket: knacklab-programs"]
+      S3BACK["S3 bucket: mongo-backup-knack<br/>Newest backup object: 2023‑06‑11"]
+
+      ECRUAE["ECR (me-central-1) — service images"]
+    end
+  end
+
+  subgraph BAH["me-south-1 (Bahrain)"]
+    direction LR
+    PORT["EC2: Portainer (15.184.114.xxx)"]
+    ECRBAH["ECR (regional)"]
+  end
+
+  GH["GitHub Actions (build)"]
+
+  CF --> NGINX
+  NGINX --> GATEWAY
+  GATEWAY --> AUTH
+  GATEWAY --> ASSESS
+  GATEWAY --> SURVEY
+  GATEWAY --> NOTIF
+  GATEWAY --> REPORT
+  GATEWAY --> PROGRAM
+  GATEWAY --> SLOG
+  GATEWAY --> SSCHED
+  GATEWAY --> FILEUP
+  GATEWAY --> EMAIL
+  GATEWAY --> GOAL
+  GATEWAY --> FRONTEND
+
+  AUTH --> DBEC2
+  ASSESS --> DBEC2
+  SURVEY --> DBEC2
+  NOTIF --> DBEC2
+  REPORT --> DBEC2
+  PROGRAM --> DBEC2
+  SLOG --> DBEC2
+  SSCHED --> DBEC2
+  FILEUP --> DBEC2
+  EMAIL --> DBEC2
+  GOAL --> DBEC2
+
+  EMAIL --> REDIS
+  NOTIF --> RABBIT
+  EMAIL --> RABBIT
+
+  FILEUP --> S3ASSETS
+  FRONTEND --> S3ASSETS
+  PROGRAM --> S3PROGS
+  DBEC2 --> S3BACK
+
+  GH --> ECRUAE
+  ECRUAE -. pull images .-> NGINX
+  ECRBAH -. admin only .-> PORT

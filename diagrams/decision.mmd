@@ -1,0 +1,13 @@
+flowchart TB
+  A["Start: Align on goals (delivery, risk, compliance)"]
+  B{Target AWS ready?\nSSO/OIDC, KMS, VPC CIDRs, DNS delegation}
+  C{Business KPI gain now?\n(reliability, cost, compliance)}
+  D["Option 1: No migration now\n- Keep prod as-is\n- Provide visibility package\n- Reassess in X weeks"]
+  E["Option 2: Hybrid\n- Move non-prod now\n- Set readiness gate for prod"]
+  F["Option 3: Phased rehost\n- Non-prod → prod\n- Short freeze + DNS cutover\n- Rollback plan"]
+
+  A --> B
+  B -- No --> D
+  B -- Yes --> C
+  C -- No/Weak --> E
+  C -- Clear gain & mandate --> F
